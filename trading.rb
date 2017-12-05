@@ -5,7 +5,6 @@ influxdb = InfluxDB::Client.new "crypto"
 redis = Redis.new
 redis = Redis.new(host: "127.0.0.1", port: 6379, db: 2)
 
-$log = Logger.new("| tee trading.log")
 
 
 
@@ -54,6 +53,7 @@ $pair = 'XXBTZEUR'
 $near_value = 100 
 $far_value = 900
 
+$log = Logger.new("| tee #{$pair}-trading.log")
 def ascending(redis,influxdb,moving_average_near,moving_average_far)
 	
 	last_trend = redis.get("#{$pair}_trend")
@@ -117,20 +117,23 @@ def ascending(redis,influxdb,moving_average_near,moving_average_far)
 			$log.info "On achète"
         	                redis.set("#{$pair}_price_buy", price)
         	                redis.set("#{$pair}_order", 'sell')
-				File.open("order.txt", 'w') { |file| file.write("On achète à #{$time} au prix de #{price}") }
+				File.open("order.txt", 'a') { |file| file.write("1 - On achète à #{$time} au prix de #{price}") }
+				break
 			end
 			if redis.get("#{$pair}_count") == 40 and redis.get("#{$pair}_order") == 'buy' and ( prct_diff > 1 or redis.get("#{$pair}_asc_prct_max_value_20m") > 1)
                         $log.info "On achète"
                                 redis.set("#{$pair}_price_buy", price)
                                 redis.set("#{$pair}_order", 'sell')
-				File.open("order.txt", 'w') { |file| file.write("On achète à #{$time} au prix de #{price}") }
+				File.open("order.txt", 'a') { |file| file.write("2 - On achète à #{$time} au prix de #{price}") }
+				break
                         end
 			if redis.get("#{$pair}_count") == 120 and redis.get("#{$pair}_order") == 'buy' and ( prct_diff > 1 or redis.get("#{$pair}_asc_prct_max_value_1h") > 1 )
         	                # Jalon à 1h
 				$log.info "On achète"
         	                redis.set("#{$pair}_price_buy", price)
         	                redis.set("#{$pair}_order", 'sell')
-				File.open("order.txt", 'w') { |file| file.write("On achète à #{$time} au prix de #{price}") }
+				File.open("order.txt", 'a') { |file| file.write("3 - On achète à #{$time} au prix de #{price}") }
+				break
         	        end
 			if moving_average_near > moving_average_far
                              $log.info "Ascending !"
@@ -151,7 +154,8 @@ def ascending(redis,influxdb,moving_average_near,moving_average_far)
 				$log.info "On achète"
                                 redis.set("#{$pair}_price_buy", price)
                                 redis.set("#{$pair}_order", 'sell')
-				File.open("order.txt", 'w') { |file| file.write("On achète à #{$time} au prix de #{price}") }
+				File.open("order.txt", 'a') { |file| file.write("4 - On achète à #{$time} au prix de #{price}") }
+				break
 			 end
 
 
@@ -210,12 +214,12 @@ def descending(redis,influxdb,moving_average_near,moving_average_far)
                 redis.set("#{$pair}_desc_prct_max_value_10m", 0)
                 redis.set("#{$pair}_desc_prct_max_value_1h", 0)
 		#######
-		prct_since_buy = ((price * 100) / redis.get("#{$pair}_price_buy") ) - 100
-		redis.set("#{$pair}_prct_since_buy", prct_since_buy)
+		#prct_since_buy = ((price * 100) / redis.get("#{$pair}_price_buy") ) - 100
+		#redis.set("#{$pair}_prct_since_buy", prct_since_buy)
                 if redis.get("#{$pair}_order") == 'sell'
                       $log.info "On vend"
                       redis.set("#{$pair}_order", 'buy')
-			File.open("order.txt", 'w') { |file| file.write("On vend à #{$time} au prix de #{price}") }
+			File.open("order.txt", 'a') { |file| file.write("On vend à #{$time} au prix de #{price}") }
                 end
         else
                 $log.info "Keep descending \ "
